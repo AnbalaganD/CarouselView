@@ -11,13 +11,25 @@ import CarouselView
 struct ContentView: View {
     private let items: [String] = ["One", "Two", "Three", "Four", "Five"]
     @State private var selectedIndex: Int = 2
+    @State private var autoScrollEnabled = true
     
     var body: some View {
-        VStack(spacing: 0) {
-            Button {
-                selectedIndex = Int.random(in: -10...10)
-            } label: {
-                Text("Set Random Index")
+        VStack(spacing: 10) {
+            HStack {
+                Button {
+                    selectedIndex = Int.random(in: -10...10)
+                } label: {
+                    Text("Random Index")
+                        
+                }
+                .buttonStyle(.borderedProminent)
+                
+                Button {
+                    autoScrollEnabled = !autoScrollEnabled
+                } label: {
+                    Text(autoScrollEnabled ? "Disable Auto Scroll" : "Enable Auto Scroll")
+                }
+                .buttonStyle(.borderedProminent)
             }
             CarouselView(
                 items,
@@ -30,6 +42,7 @@ struct ContentView: View {
                     .background(getColor(value: item))
                     .clipShape(RoundedRectangle(cornerSize: .init(width: 5, height: 5)))
             }
+            .autoscroll($autoScrollEnabled)
             .onChange(of: selectedIndex) { newValue in
                 print(newValue + 1)
             }
