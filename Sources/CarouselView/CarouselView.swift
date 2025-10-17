@@ -36,6 +36,8 @@ public struct CarouselView<T, Content: View>: View {
     @State private var dragOffsetX: CGFloat = 0.0
     @State private var previousOffsetX: CGFloat = 0.0
     @State private var tabItem: [T] = []
+    @State private var lastSelectedIndex: Int = 0
+    @State private var viewWidth: CGFloat = 0
     
     /// Creates a carousel view with item-based selection tracking.
     ///
@@ -92,8 +94,11 @@ public struct CarouselView<T, Content: View>: View {
                         .onHeightChanged { self.height = max(self.height, $0) }
                 }
                 .offset(x: dragOffsetX)
-                .onAppear {
-                    dragOffsetX = -(geometry.size.width + spacing)
+                .task(id: geometry.size.width) {
+                    viewWidth = geometry.size.width
+                    if dragOffsetX == 0 {
+                        dragOffsetX = -(geometry.size.width + spacing)
+                    }
                 }
                 .contentShape(.interaction, Rectangle())
                 .gesture(
@@ -136,9 +141,12 @@ public struct CarouselView<T, Content: View>: View {
         }
         .frame(height: height)
         .clipped()
-        .onAppear { constructTabItem() }
-        .onChange(of: selectedIndex) { _ in
-            constructTabItem()
+        .onAppear { 
+            lastSelectedIndex = selectedIndex
+            constructTabItem() 
+        }
+        .onChange(of: selectedIndex) { newIndex in
+            animateToIndex(newIndex)
         }
     }
     
@@ -162,5 +170,22 @@ public struct CarouselView<T, Content: View>: View {
 
     private func nextIndex() -> Int {
         (selectedIndex + 1) % items.count
+    }
+    
+    private func animateToIndex(_ newIndex: Int) {
+        var index = max(0, min(newIndex, items.count - 1))
+        guard index != lastSelectedIndex, viewWidth > 0 else { return }
+        
+        let isForward = (index > lastSelectedIndex) || (lastSelectedIndex == items.count - 1 && index == 0)
+        lastSelectedIndex = index
+        
+        withAnimation {
+            dragOffsetX = isForward ? -(viewWidth + spacing) * 2 : 0
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            dragOffsetX = -(viewWidth + spacing)
+            constructTabItem()
+        }
     }
 }
