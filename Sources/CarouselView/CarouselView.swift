@@ -7,6 +7,24 @@
 
 import SwiftUI
 
+/// A SwiftUI view that displays items in an infinite scrolling carousel.
+///
+/// `CarouselView` provides a horizontal scrolling interface with infinite loop support,
+/// allowing users to swipe through items seamlessly. The view automatically handles
+/// wrapping at boundaries to create a continuous scrolling experience.
+///
+/// Example usage:
+/// ```swift
+/// CarouselView(
+///     items,
+///     spacing: 10.0,
+///     selectedIndex: $selectedIndex
+/// ) { item in
+///     Text(item)
+///         .frame(maxWidth: .infinity)
+///         .frame(height: 200)
+/// }
+/// ```
 public struct CarouselView<T, Content: View>: View {
     let items: [T]
     let spacing: CGFloat
@@ -19,6 +37,13 @@ public struct CarouselView<T, Content: View>: View {
     @State private var previousOffsetX: CGFloat = 0.0
     @State private var tabItem: [T] = []
     
+    /// Creates a carousel view with item-based selection tracking.
+    ///
+    /// - Parameters:
+    ///   - items: The array of items to display in the carousel.
+    ///   - spacing: The horizontal spacing between items. Defaults to 0.0.
+    ///   - selected: A binding to the currently selected item.
+    ///   - content: A view builder that creates the view for each item.
     public init(
         _ items: [T],
         spacing: CGFloat = 0.0,
@@ -32,6 +57,13 @@ public struct CarouselView<T, Content: View>: View {
         self.content = content
     }
     
+    /// Creates a carousel view with index-based selection tracking.
+    ///
+    /// - Parameters:
+    ///   - items: The array of items to display in the carousel.
+    ///   - spacing: The horizontal spacing between items. Defaults to 0.0.
+    ///   - selectedIndex: A binding to the index of the currently selected item.
+    ///   - content: A view builder that creates the view for each item.
     public init(
         _ items: [T],
         spacing: CGFloat = 0.0,
@@ -73,9 +105,9 @@ public struct CarouselView<T, Content: View>: View {
                             previousOffsetX = 0
                         }
                         
-                        let isReachedThreashold = abs(value.translation.width) > geometry.size.width / 3
+                        let isReachedThreshold = abs(value.translation.width) > geometry.size.width / 3
                         
-                        if !isReachedThreashold {
+                        if !isReachedThreshold {
                             withAnimation {
                                 dragOffsetX = -(geometry.size.width + spacing)
                             }
@@ -90,6 +122,7 @@ public struct CarouselView<T, Content: View>: View {
                             selectedIndex = previousIndex()
                             isForward = false
                         }
+                        selected = items[selectedIndex]
                         
                         withAnimation {
                             dragOffsetX = isForward ? -geometry.size.width * 2 : 0
@@ -104,6 +137,9 @@ public struct CarouselView<T, Content: View>: View {
         .frame(height: height)
         .clipped()
         .onAppear { constructTabItem() }
+        .onChange(of: selectedIndex) { _ in
+            constructTabItem()
+        }
     }
     
     private func constructTabItem() {
@@ -112,6 +148,7 @@ public struct CarouselView<T, Content: View>: View {
             return
         }
         
+        selectedIndex = max(0, min(selectedIndex, items.count - 1))
         tabItem = [
             items[previousIndex()],
             items[selectedIndex],

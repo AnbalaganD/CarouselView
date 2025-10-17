@@ -14,6 +14,11 @@ struct ContentView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            Button {
+                selectedIndex = Int.random(in: -10...10)
+            } label: {
+                Text("Set Random Index")
+            }
             CarouselView(
                 items,
                 spacing: 10.0,
