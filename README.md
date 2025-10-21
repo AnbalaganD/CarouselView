@@ -11,6 +11,8 @@ This library simplifies the implementation of carousel-style interfaces in Swift
 
 📍 Current index monitoring
 
+🔄 Auto-scroll with customizable interval
+
 ⚡️ Native SwiftUI implementation
 
 ## Swift Package manager (SPM)
@@ -23,6 +25,8 @@ dependencies: [
 ```
 
 ## Usage
+
+### Basic Usage
 ```swift
 import CarouselView
 
@@ -42,6 +46,30 @@ struct ContentView: View {
                 .background(Color.gray)
                 .clipShape(RoundedRectangle(cornerSize: .init(width: 5, height: 5)))
         }
+    }
+}
+```
+
+### Auto-scroll
+```swift
+struct ContentView: View {
+    private let items: [String] = ["One", "Two", "Three", "Four", "Five"]
+    @State private var selectedIndex: Int = 0
+    @State private var isAutoScrollEnabled: Bool = true
+    
+    var body: some View {
+        CarouselView(
+            items,
+            spacing: 10.0,
+            selectedIndex: $selectedIndex
+        ) { item in
+            Text(item)
+                .frame(maxWidth: .infinity)
+                .frame(height: 200)
+                .background(Color.blue)
+                .clipShape(RoundedRectangle(cornerSize: .init(width: 5, height: 5)))
+        }
+        .autoscroll($isAutoScrollEnabled, interval: 3.0)
     }
 }
 ```
