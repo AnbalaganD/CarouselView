@@ -11,6 +11,7 @@ struct AutoscrollModifier: ViewModifier {
     let interval: TimeInterval
     @Binding var isEnabled: Bool
     @Binding var selectedIndex: Int
+    @Binding var isInteracting: Bool
     let itemCount: Int
     
     @State private var timer: Timer?
@@ -18,27 +19,19 @@ struct AutoscrollModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onAppear {
-                if isEnabled {
-                    startTimer()
-                }
+                if isEnabled { startTimer() }
             }
-            .onDisappear {
-                stopTimer()
-            }
+            .onDisappear { stopTimer() }
             .onChange(of: isEnabled) { enabled in
-                if enabled {
-                    startTimer()
-                } else {
-                    stopTimer()
-                }
+                enabled ? startTimer() : stopTimer()
             }
     }
     
     private func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
-            withAnimation {
-                selectedIndex = (selectedIndex + 1) % itemCount
-            }
+            // Pause autoscroll when user is actively interacting with the carousel
+            if isInteracting { return }
+            withAnimation { selectedIndex = (selectedIndex + 1) % itemCount }
         }
     }
     
@@ -51,8 +44,11 @@ struct AutoscrollModifier: ViewModifier {
 public extension CarouselView {
     /// Configures automatic scrolling for the carousel.
     ///
+    /// Autoscroll automatically pauses when the user interacts with the carousel
+    /// (during drag gestures) and resumes when interaction ends.
+    ///
     /// - Parameters:
-    ///   - isEnabled: Whether autoscroll is enabled. Defaults to true.
+    ///   - isEnabled: A binding to control whether autoscroll is enabled.
     ///   - interval: Time interval between automatic scrolls in seconds. Defaults to 3.0.
     /// - Returns: A view with autoscroll configured.
     func autoscroll(_ isEnabled: Binding<Bool>, interval: TimeInterval = 3.0) -> some View {
@@ -61,6 +57,7 @@ public extension CarouselView {
                 interval: interval,
                 isEnabled: isEnabled,
                 selectedIndex: $selectedIndex,
+                isInteracting: $isInteracting,
                 itemCount: items.count
             )
         )

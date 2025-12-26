@@ -13,6 +13,9 @@ import SwiftUI
 /// allowing users to swipe through items seamlessly. The view automatically handles
 /// wrapping at boundaries to create a continuous scrolling experience.
 ///
+/// The carousel tracks user interaction state internally, which is used by the
+/// `.autoscroll()` modifier to automatically pause scrolling during manual swipes.
+///
 /// Example usage:
 /// ```swift
 /// CarouselView(
@@ -24,12 +27,14 @@ import SwiftUI
 ///         .frame(maxWidth: .infinity)
 ///         .frame(height: 200)
 /// }
+/// .autoscroll($isEnabled, interval: 3.0)
 /// ```
 public struct CarouselView<T, Content: View>: View {
     let items: [T]
     let spacing: CGFloat
     @Binding var selected: T?
     @Binding var selectedIndex: Int
+    @Binding var isInteracting: Bool
     @ViewBuilder let content: (T) -> Content
     
     @State private var height: CGFloat = 0.0
@@ -38,44 +43,51 @@ public struct CarouselView<T, Content: View>: View {
     @State private var tabItem: [T] = []
     @State private var lastSelectedIndex: Int = 0
     @State private var viewWidth: CGFloat = 0
+    @GestureState private var isUserInteractionActive: Bool = false
     
     /// Creates a carousel view with item-based selection tracking.
-    ///
+    /// 
     /// - Parameters:
     ///   - items: The array of items to display in the carousel.
     ///   - spacing: The horizontal spacing between items. Defaults to 0.0.
     ///   - selected: A binding to the currently selected item.
+    ///   - isInteracting: A binding that indicates whether the user is actively interacting with the carousel.
     ///   - content: A view builder that creates the view for each item.
     public init(
         _ items: [T],
         spacing: CGFloat = 0.0,
         selected: Binding<T?>,
+        isInteracting: Binding<Bool>,
         @ViewBuilder content: @escaping (T) -> Content
     ) {
         self.items = items
         self.spacing = spacing
-        self._selectedIndex = Binding.constant(0)
+        self._selectedIndex = .constant(0)
         self._selected = selected
+        self._isInteracting = isInteracting
         self.content = content
     }
     
     /// Creates a carousel view with index-based selection tracking.
-    ///
+    /// 
     /// - Parameters:
     ///   - items: The array of items to display in the carousel.
     ///   - spacing: The horizontal spacing between items. Defaults to 0.0.
     ///   - selectedIndex: A binding to the index of the currently selected item.
+    ///   - isInteracting: A binding that indicates whether the user is actively interacting with the carousel.
     ///   - content: A view builder that creates the view for each item.
     public init(
         _ items: [T],
         spacing: CGFloat = 0.0,
         selectedIndex: Binding<Int>,
+        isInteracting: Binding<Bool>,
         @ViewBuilder content: @escaping (T) -> Content
     ) {
         self.items = items
         self.spacing = spacing
         self._selectedIndex = selectedIndex
-        self._selected = Binding.constant(nil)
+        self._selected = .constant(nil)
+        self._isInteracting = isInteracting
         self.content = content
     }
     
@@ -102,40 +114,38 @@ public struct CarouselView<T, Content: View>: View {
                 }
                 .contentShape(.interaction, Rectangle())
                 .gesture(
-                    DragGesture(minimumDistance: 0).onChanged { value in
-                        dragOffsetX = dragOffsetX + (value.translation.width - previousOffsetX)
-                        previousOffsetX = value.translation.width
-                    }.onEnded { value in
-                        defer {
-                            previousOffsetX = 0
+                    DragGesture(minimumDistance: 0)
+                        .updating($isUserInteractionActive) { _, state, _ in
+                            state = true
                         }
-                        
-                        let isReachedThreshold = abs(value.translation.width) > geometry.size.width / 3
-                        
-                        if !isReachedThreshold {
-                            withAnimation {
-                                dragOffsetX = -(geometry.size.width + spacing)
+                        .onChanged { value in
+                            dragOffsetX = dragOffsetX + (value.translation.width - previousOffsetX)
+                            previousOffsetX = value.translation.width
+                        }.onEnded { value in
+                            defer { previousOffsetX = 0 }
+                            
+                            let isReachedThreshold = abs(value.translation.width) > geometry.size.width / 3
+                            
+                            if !isReachedThreshold {
+                                withAnimation { dragOffsetX = -(geometry.size.width + spacing) }
+                                return
                             }
-                            return
+                            
+                            let isForward: Bool
+                            if value.startLocation.x > value.location.x {
+                                selectedIndex = nextIndex()
+                                isForward = true
+                            } else {
+                                selectedIndex = previousIndex()
+                                isForward = false
+                            }
+                            selected = items[selectedIndex]
+                            
+                            withAnimation { dragOffsetX = isForward ? -geometry.size.width * 2 : 0 }
+                            
+                            dragOffsetX = -(geometry.size.width + spacing)
+                            constructTabItem()
                         }
-                        
-                        let isForward: Bool
-                        if value.startLocation.x > value.location.x {
-                            selectedIndex = nextIndex()
-                            isForward = true
-                        } else {
-                            selectedIndex = previousIndex()
-                            isForward = false
-                        }
-                        selected = items[selectedIndex]
-                        
-                        withAnimation {
-                            dragOffsetX = isForward ? -geometry.size.width * 2 : 0
-                        }
-                        
-                        dragOffsetX = -(geometry.size.width + spacing)
-                        constructTabItem()
-                    }
                 )
             }
         }
@@ -147,6 +157,9 @@ public struct CarouselView<T, Content: View>: View {
         }
         .onChange(of: selectedIndex) { newIndex in
             animateToIndex(newIndex)
+        }
+        .onChange(of: isUserInteractionActive) { newValue in
+            isInteracting = newValue
         }
     }
     
@@ -179,9 +192,7 @@ public struct CarouselView<T, Content: View>: View {
         let isForward = (index > lastSelectedIndex) || (lastSelectedIndex == items.count - 1 && index == 0)
         lastSelectedIndex = index
         
-        withAnimation {
-            dragOffsetX = isForward ? -(viewWidth + spacing) * 2 : 0
-        }
+        withAnimation { dragOffsetX = isForward ? -(viewWidth + spacing) * 2 : 0 }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             dragOffsetX = -(viewWidth + spacing)

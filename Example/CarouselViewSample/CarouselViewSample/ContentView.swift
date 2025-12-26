@@ -12,6 +12,7 @@ struct ContentView: View {
     private let items: [String] = ["One", "Two", "Three", "Four", "Five"]
     @State private var selectedIndex: Int = 2
     @State private var autoScrollEnabled = true
+    @State private var isInteracting = false
     
     var body: some View {
         VStack(spacing: 10) {
@@ -34,7 +35,8 @@ struct ContentView: View {
             CarouselView(
                 items,
                 spacing: 10.0,
-                selectedIndex: $selectedIndex
+                selectedIndex: $selectedIndex,
+                isInteracting: $isInteracting
             ) { item in
                 Text(item)
                     .frame(maxWidth: .infinity)

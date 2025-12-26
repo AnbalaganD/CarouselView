@@ -13,6 +13,8 @@ This library simplifies the implementation of carousel-style interfaces in Swift
 
 🔄 Auto-scroll with customizable interval
 
+⏸️ Auto-pause on user interaction
+
 ⚡️ Native SwiftUI implementation
 
 ## Swift Package manager (SPM)
@@ -73,6 +75,8 @@ struct ContentView: View {
     }
 }
 ```
+
+Auto-scroll automatically pauses when the user interacts with the carousel and resumes when interaction ends.
 
 ## Author
 
