@@ -18,7 +18,7 @@ This library simplifies the implementation of carousel-style interfaces in Swift
 ⚡️ Native SwiftUI implementation
 
 ## Swift Package manager (SPM)
-CarouselView is available through [SPM](https://github.com/AnbalaganD/CarouselView). Use below URL to add as a dependency
+CarouselView is available through [SPM](https://swiftpackageindex.com/AnbalaganD/CarouselView). Use below URL to add as a dependency
 
 ```swift
 dependencies: [
