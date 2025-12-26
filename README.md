@@ -35,12 +35,14 @@ import CarouselView
 struct ContentView: View {
     private let items: [String] = ["One", "Two", "Three", "Four", "Five"]
     @State private var selectedIndex: Int = 2
+    @State private var isInteracting = false
     
     var body: some View {
         CarouselView(
             items,
             spacing: 10.0,
-            selectedIndex: $selectedIndex
+            selectedIndex: $selectedIndex,
+            isInteracting: $isInteracting
         ) { item in
             Text(item)
                 .frame(maxWidth: .infinity)
@@ -58,12 +60,14 @@ struct ContentView: View {
     private let items: [String] = ["One", "Two", "Three", "Four", "Five"]
     @State private var selectedIndex: Int = 0
     @State private var isAutoScrollEnabled: Bool = true
+    @State private var isInteracting = false
     
     var body: some View {
         CarouselView(
             items,
             spacing: 10.0,
-            selectedIndex: $selectedIndex
+            selectedIndex: $selectedIndex,
+            isInteracting: $isInteracting
         ) { item in
             Text(item)
                 .frame(maxWidth: .infinity)
