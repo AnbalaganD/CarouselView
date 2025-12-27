@@ -13,8 +13,8 @@ import SwiftUI
 /// allowing users to swipe through items seamlessly. The view automatically handles
 /// wrapping at boundaries to create a continuous scrolling experience.
 ///
-/// The carousel tracks user interaction state internally, which is used by the
-/// `.autoscroll()` modifier to automatically pause scrolling during manual swipes.
+/// The carousel tracks user interaction state internally and exposes it through the
+/// `.onCarouselInteraction()` modifier, enabling features like auto-pause during manual scrolling.
 ///
 /// Example usage:
 /// ```swift
@@ -28,13 +28,15 @@ import SwiftUI
 ///         .frame(height: 200)
 /// }
 /// .autoscroll($isEnabled, interval: 3.0)
+/// .onCarouselInteraction { isInteracting in
+///     print("User is interacting: \(isInteracting)")
+/// }
 /// ```
 public struct CarouselView<T, Content: View>: View {
     let items: [T]
     let spacing: CGFloat
     @Binding var selected: T?
     @Binding var selectedIndex: Int
-    @Binding var isInteracting: Bool
     @ViewBuilder let content: (T) -> Content
     
     @State private var height: CGFloat = 0.0
@@ -43,7 +45,7 @@ public struct CarouselView<T, Content: View>: View {
     @State private var tabItem: [T] = []
     @State private var lastSelectedIndex: Int = 0
     @State private var viewWidth: CGFloat = 0
-    @GestureState private var isUserInteractionActive: Bool = false
+    @GestureState private var isInteracting: Bool = false
     
     /// Creates a carousel view with item-based selection tracking.
     /// 
@@ -51,20 +53,17 @@ public struct CarouselView<T, Content: View>: View {
     ///   - items: The array of items to display in the carousel.
     ///   - spacing: The horizontal spacing between items. Defaults to 0.0.
     ///   - selected: A binding to the currently selected item.
-    ///   - isInteracting: A binding that indicates whether the user is actively interacting with the carousel.
     ///   - content: A view builder that creates the view for each item.
     public init(
         _ items: [T],
         spacing: CGFloat = 0.0,
         selected: Binding<T?>,
-        isInteracting: Binding<Bool>,
         @ViewBuilder content: @escaping (T) -> Content
     ) {
         self.items = items
         self.spacing = spacing
         self._selectedIndex = .constant(0)
         self._selected = selected
-        self._isInteracting = isInteracting
         self.content = content
     }
     
@@ -74,20 +73,17 @@ public struct CarouselView<T, Content: View>: View {
     ///   - items: The array of items to display in the carousel.
     ///   - spacing: The horizontal spacing between items. Defaults to 0.0.
     ///   - selectedIndex: A binding to the index of the currently selected item.
-    ///   - isInteracting: A binding that indicates whether the user is actively interacting with the carousel.
     ///   - content: A view builder that creates the view for each item.
     public init(
         _ items: [T],
         spacing: CGFloat = 0.0,
         selectedIndex: Binding<Int>,
-        isInteracting: Binding<Bool>,
         @ViewBuilder content: @escaping (T) -> Content
     ) {
         self.items = items
         self.spacing = spacing
         self._selectedIndex = selectedIndex
         self._selected = .constant(nil)
-        self._isInteracting = isInteracting
         self.content = content
     }
     
@@ -115,7 +111,7 @@ public struct CarouselView<T, Content: View>: View {
                 .contentShape(.interaction, Rectangle())
                 .gesture(
                     DragGesture(minimumDistance: 0)
-                        .updating($isUserInteractionActive) { _, state, _ in
+                        .updating($isInteracting) { _, state, _ in
                             state = true
                         }
                         .onChanged { value in
@@ -151,15 +147,13 @@ public struct CarouselView<T, Content: View>: View {
         }
         .frame(height: height)
         .clipped()
-        .onAppear { 
+        .preference(key: CarouselInteractionKey.self, value: isInteracting)
+        .onAppear {
             lastSelectedIndex = selectedIndex
             constructTabItem() 
         }
         .onChange(of: selectedIndex) { newIndex in
             animateToIndex(newIndex)
-        }
-        .onChange(of: isUserInteractionActive) { newValue in
-            isInteracting = newValue
         }
     }
     
@@ -186,7 +180,7 @@ public struct CarouselView<T, Content: View>: View {
     }
     
     private func animateToIndex(_ newIndex: Int) {
-        var index = max(0, min(newIndex, items.count - 1))
+        let index = max(0, min(newIndex, items.count - 1))
         guard index != lastSelectedIndex, viewWidth > 0 else { return }
         
         let isForward = (index > lastSelectedIndex) || (lastSelectedIndex == items.count - 1 && index == 0)

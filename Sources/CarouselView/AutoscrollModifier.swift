@@ -11,13 +11,16 @@ struct AutoscrollModifier: ViewModifier {
     let interval: TimeInterval
     @Binding var isEnabled: Bool
     @Binding var selectedIndex: Int
-    @Binding var isInteracting: Bool
     let itemCount: Int
     
     @State private var timer: Timer?
+    @State private var isInteracting: Bool = false
     
     func body(content: Content) -> some View {
         content
+            .onCarouselInteraction { interaction in
+                isInteracting = interaction
+            }
             .onAppear {
                 if isEnabled { startTimer() }
             }
@@ -28,6 +31,7 @@ struct AutoscrollModifier: ViewModifier {
     }
     
     private func startTimer() {
+        stopTimer()
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
             // Pause autoscroll when user is actively interacting with the carousel
             if isInteracting { return }
@@ -47,6 +51,8 @@ public extension CarouselView {
     /// Autoscroll automatically pauses when the user interacts with the carousel
     /// (during drag gestures) and resumes when interaction ends.
     ///
+    /// - Important: Autoscroll is paused if user interaction is active.
+    ///
     /// - Parameters:
     ///   - isEnabled: A binding to control whether autoscroll is enabled.
     ///   - interval: Time interval between automatic scrolls in seconds. Defaults to 3.0.
@@ -57,7 +63,6 @@ public extension CarouselView {
                 interval: interval,
                 isEnabled: isEnabled,
                 selectedIndex: $selectedIndex,
-                isInteracting: $isInteracting,
                 itemCount: items.count
             )
         )

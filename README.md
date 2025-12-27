@@ -22,7 +22,7 @@ CarouselView is available through [SPM](https://swiftpackageindex.com/AnbalaganD
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/AnbalaganD/CarouselView", .upToNextMajor(from: "1.1.1"))
+    .package(url: "https://github.com/AnbalaganD/CarouselView", .upToNextMajor(from: "1.1.2"))
 ]
 ```
 
@@ -35,14 +35,12 @@ import CarouselView
 struct ContentView: View {
     private let items: [String] = ["One", "Two", "Three", "Four", "Five"]
     @State private var selectedIndex: Int = 2
-    @State private var isInteracting = false
     
     var body: some View {
         CarouselView(
             items,
             spacing: 10.0,
-            selectedIndex: $selectedIndex,
-            isInteracting: $isInteracting
+            selectedIndex: $selectedIndex
         ) { item in
             Text(item)
                 .frame(maxWidth: .infinity)
@@ -59,15 +57,13 @@ struct ContentView: View {
 struct ContentView: View {
     private let items: [String] = ["One", "Two", "Three", "Four", "Five"]
     @State private var selectedIndex: Int = 0
-    @State private var isAutoScrollEnabled: Bool = true
-    @State private var isInteracting = false
+    @State private var autoScrollEnabled: Bool = true
     
     var body: some View {
         CarouselView(
             items,
             spacing: 10.0,
-            selectedIndex: $selectedIndex,
-            isInteracting: $isInteracting
+            selectedIndex: $selectedIndex
         ) { item in
             Text(item)
                 .frame(maxWidth: .infinity)
@@ -75,12 +71,37 @@ struct ContentView: View {
                 .background(Color.blue)
                 .clipShape(RoundedRectangle(cornerSize: .init(width: 5, height: 5)))
         }
-        .autoscroll($isAutoScrollEnabled, interval: 3.0)
+        .autoscroll($autoScrollEnabled, interval: 3.0)
     }
 }
 ```
 
 Auto-scroll automatically pauses when the user interacts with the carousel and resumes when interaction ends.
+
+### Observing User Interaction
+```swift
+struct ContentView: View {
+    private let items: [String] = ["One", "Two", "Three", "Four", "Five"]
+    @State private var selectedIndex: Int = 0
+    
+    var body: some View {
+        CarouselView(
+            items,
+            spacing: 10.0,
+            selectedIndex: $selectedIndex
+        ) { item in
+            Text(item)
+                .frame(maxWidth: .infinity)
+                .frame(height: 200)
+                .background(Color.blue)
+                .clipShape(RoundedRectangle(cornerSize: .init(width: 5, height: 5)))
+        }
+        .onCarouselInteraction { isInteracting in
+            print("User is interacting: \(isInteracting)")
+        }
+    }
+}
+```
 
 ## Author
 
