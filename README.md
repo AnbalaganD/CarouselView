@@ -22,7 +22,7 @@ CarouselView is available through [SPM](https://swiftpackageindex.com/AnbalaganD
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/AnbalaganD/CarouselView", .upToNextMajor(from: "1.1.0"))
+    .package(url: "https://github.com/AnbalaganD/CarouselView", .upToNextMajor(from: "1.1.1"))
 ]
 ```
 
